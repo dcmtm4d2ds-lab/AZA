@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Arbeitszeit</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,171 +16,388 @@
       --danger: #ff453a;
       --text: #ffffff;
       --text-sec: #8e8e93;
+      --border: #3a3a3c;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 20px; padding-bottom: 40px; }
-    h1 { font-size: 24px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 16px; padding-bottom: 40px; }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 16px; text-align: center; }
     
-    .status-card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .status-title { font-size: 14px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px; }
-    .status-value { font-size: 22px; font-weight: 600; margin: 8px 0; color: var(--text); }
-    .timer { font-size: 32px; font-weight: 700; font-mono: monospace; font-variant-numeric: tabular-nums; }
-
-    .btn-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
-    button {
-      border: none;
-      border-radius: 14px;
-      padding: 18px;
-      font-size: 18px;
-      font-weight: 600;
-      color: white;
-      cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
-    }
-    button:active { transform: scale(0.98); }
+    .card { background-color: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    
+    .status-box { text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; margin-bottom: 16px; background: #3a3a3c; }
+    .status-active { background: #1b3a4b; color: #64d2ff; }
+    
+    .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .btn { border: none; border-radius: 8px; padding: 14px 8px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; text-align: center; transition: opacity 0.2s; }
+    .btn:active { opacity: 0.7; }
     .btn-ho { background-color: var(--accent-ho); }
     .btn-dg { background-color: var(--accent-dg); }
     .btn-bu { background-color: var(--accent-bu); }
-    .btn-stop { background-color: var(--danger); width: 100%; margin-top: 8px; }
-
-    .log-section { background: var(--card); border-radius: 16px; padding: 16px; }
-    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .log-header h2 { font-size: 18px; }
-    .clear-btn { background: none; border: none; color: var(--danger); font-size: 14px; padding: 0; }
+    .btn-stop { background-color: var(--danger); grid-column: span 3; font-size: 16px; padding: 16px; }
+    .btn-secondary { background-color: #3a3a3c; color: var(--text); }
+    .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
     
-    .log-list { list-style: none; max-height: 250px; overflow-y: auto; }
-    .log-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #3a3a3c; font-size: 14px; }
-    .log-item:last-child { border-bottom: none; }
-    .log-tag { font-weight: 600; }
-    .tag-Homeoffice { color: var(--accent-ho); }
-    .tag-Dienstgang { color: var(--accent-dg); }
-    .tag-Büro { color: var(--accent-bu); }
+    /* Apple Style Kalender */
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .cal-title { font-size: 16px; font-weight: 700; }
+    .cal-nav { display: flex; gap: 8px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .cal-day-label { font-size: 11px; font-weight: 600; color: var(--text-sec); padding-bottom: 4px; }
+    .cal-day { min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; cursor: pointer; position: relative; }
+    .cal-day.other-month { opacity: 0.2; }
+    .cal-day.today { font-weight: 700; color: var(--accent-ho); }
+    .cal-day.selected { background-color: #3a3a3c; }
+    .dot { width: 4px; height: 4px; background-color: var(--accent-ho); border-radius: 50%; position: absolute; bottom: 4px; }
+
+    .entry-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .entry-item:last-child { border-bottom: none; }
+    .entry-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .entry-details { font-size: 13px; color: var(--text-sec); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .entry-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    .tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; }
+    .tag-ho { background: var(--accent-ho); }
+    .tag-dg { background: var(--accent-dg); }
+    .tag-bu { background: var(--accent-bu); }
+
+    /* Modal / Edit Overlay */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; padding: 16px; }
+    .modal-content { background: var(--card); border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-sec); margin-bottom: 4px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
   </style>
 </head>
 <body>
 
-  <h1>Arbeitserfassung</h1>
+  <h1>Arbeitszeit-Erfassung</h1>
 
-  <div class="status-card">
-    <div class="status-title">Aktueller Status</div>
-    <div id="current-status" class="status-value">Inaktiv</div>
-    <div id="timer" class="timer">00:00:00</div>
-  </div>
-
-  <div class="btn-grid">
-    <button class="btn-ho" onclick="startTracking('Homeoffice')">🔵 Homeoffice</button>
-    <button class="btn-dg" onclick="startTracking('Dienstgang')">🟠 Dienstgang</button>
-    <button class="btn-bu" onclick="startTracking('Büro')">🟢 Büro</button>
-    <button class="btn-stop" onclick="stopTracking()">⏹️ Feierabend (Stopp)</button>
-  </div>
-
-  <div class="log-section">
-    <div class="log-header">
-      <h2>Heute erfasst</h2>
-      <button class="clear-btn" onclick="clearLogs()">Löschen</button>
+  <div class="card">
+    <div id="statusBox" class="status-box">Nicht eingestempelt</div>
+    <div class="btn-group" id="startBtns">
+      <button class="btn btn-ho" onclick="startTracking('Homeoffice')">Homeoffice</button>
+      <button class="btn btn-dg" onclick="startTracking('Dienstgang')">Dienstgang</button>
+      <button class="btn btn-bu" onclick="startTracking('Büro')">Büro</button>
     </div>
-    <ul id="log-list" class="log-list"></ul>
+    <button id="stopBtn" class="btn btn-stop" style="display:none;" onclick="stopTracking()">Ausstempeln</button>
+  </div>
+
+  <!-- Apple Kalender Card -->
+  <div class="card">
+    <div class="cal-header">
+      <span class="cal-title" id="calMonthYear"></span>
+      <div class="cal-nav">
+        <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">&lt;</button>
+        <button class="btn btn-secondary btn-sm" onclick="resetToToday()">Heute</button>
+        <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">&gt;</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calDaysHeader">
+      <div class="cal-day-label">Mo</div>
+      <div class="cal-day-label">Di</div>
+      <div class="cal-day-label">Mi</div>
+      <div class="cal-day-label">Do</div>
+      <div class="cal-day-label">Fr</div>
+      <div class="cal-day-label">Sa</div>
+      <div class="cal-day-label">So</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h2 style="font-size: 16px;" id="entriesListTitle">Einträge</h2>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">CSV Export</button>
+    </div>
+    <div id="entriesList"></div>
+  </div>
+
+  <!-- Modal für Nachbearbeitung -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">Eintrag bearbeiten</div>
+      <input type="hidden" id="editId">
+      <div class="form-group">
+        <label>Art</label>
+        <select id="editType">
+          <option value="Homeoffice">Homeoffice</option>
+          <option value="Dienstgang">Dienstgang</option>
+          <option value="Büro">Büro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="editDate">
+      </div>
+      <div class="form-group">
+        <label>Startzeit</label>
+        <input type="time" id="editStart">
+      </div>
+      <div class="form-group">
+        <label>Endzeit</label>
+        <input type="time" id="editEnd">
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Abbrechen</button>
+        <button class="btn btn-bu" style="flex:1;" onclick="saveEdit()">Speichern</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    let currentSession = JSON.parse(localStorage.getItem('currentSession')) || null;
-    let logs = JSON.parse(localStorage.getItem('workLogs')) || [];
-    let timerInterval = null;
+    let activeSession = JSON.parse(localStorage.getItem('activeSession')) || null;
+    let entries = JSON.parse(localStorage.getItem('timeEntries')) || [];
+    
+    let currentDate = new Date();
+    let selectedDateStr = null; // Filter für ausgewählten Tag
 
-    function saveState() {
-      localStorage.setItem('currentSession', JSON.stringify(currentSession));
-      localStorage.setItem('workLogs', JSON.stringify(logs));
+    function updateUI() {
+      const statusBox = document.getElementById('statusBox');
+      const startBtns = document.getElementById('startBtns');
+      const stopBtn = document.getElementById('stopBtn');
+
+      if (activeSession) {
+        statusBox.className = 'status-box status-active';
+        statusBox.innerText = `Aktiv: ${activeSession.type} (seit ${activeSession.startTime})`;
+        startBtns.style.display = 'none';
+        stopBtn.style.display = 'block';
+      } else {
+        statusBox.className = 'status-box';
+        statusBox.innerText = 'Nicht eingestempelt';
+        startBtns.style.display = 'grid';
+        stopBtn.style.display = 'none';
+      }
+
+      renderCalendar();
+      renderEntries();
     }
 
     function startTracking(type) {
       const now = new Date();
-      if (currentSession) {
-        stopTracking(false); // Vorherigen Status beenden, ohne komplett aufzuhören
-      }
-      currentSession = { type: type, start: now.toISOString() };
-      saveState();
+      activeSession = {
+        type: type,
+        date: now.toISOString().split('T')[0],
+        startTime: now.toTimeString().substring(0, 5)
+      };
+      localStorage.setItem('activeSession', JSON.stringify(activeSession));
       updateUI();
     }
 
-    function stopTracking(clearSession = true) {
-      if (!currentSession) return;
+    function stopTracking() {
+      if (!activeSession) return;
       const now = new Date();
-      const startTime = new Date(currentSession.start);
+      const endTime = now.toTimeString().substring(0, 5);
       
-      logs.unshift({
-        type: currentSession.type,
-        start: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        end: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: startTime.toLocaleDateString('de-DE')
-      });
+      const newEntry = {
+        id: Date.now(),
+        type: activeSession.type,
+        date: activeSession.date,
+        startTime: activeSession.startTime,
+        endTime: endTime
+      };
 
-      if (clearSession) {
-        currentSession = null;
-      }
-      saveState();
+      entries.unshift(newEntry);
+      localStorage.setItem('timeEntries', JSON.stringify(entries));
+      
+      activeSession = null;
+      localStorage.removeItem('activeSession');
       updateUI();
     }
 
-    function clearLogs() {
-      if (confirm('Möchtest du das Protokoll wirklich löschen?')) {
-        logs = [];
-        saveState();
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+      document.getElementById('calMonthYear').innerText = `${monthNames[month]} ${year}`;
+
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+
+      // Wochentag anpassen (Montag = 0, Sonntag = 6)
+      let firstDayIndex = firstDayOfMonth.getDay() - 1;
+      if (firstDayIndex === -1) firstDayIndex = 6;
+
+      const totalDays = lastDayOfMonth.getDate();
+      const calGrid = document.getElementById('calGrid');
+      calGrid.innerHTML = '';
+
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      // Tage des vorherigen Monats (Auffüllung)
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+      for (let i = firstDayIndex; i > 0; i--) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'cal-day other-month';
+        dayDiv.innerText = prevMonthLastDay - i + 1;
+        calGrid.appendChild(dayDiv);
+      }
+
+      // Tage des aktuellen Monats
+      for (let day = 1; day <= totalDays; day++) {
+        const dayDiv = document.createElement('div');
+        const formattedDay = day < 10 ? `0${day}` : day;
+        const formattedMonth = (month + 1) < 10 ? `0${month + 1}` : (month + 1);
+        const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+        dayDiv.className = 'cal-day';
+        if (dateStr === todayStr) dayDiv.classList.add('today');
+        if (dateStr === selectedDateStr) dayDiv.classList.add('selected');
+
+        dayDiv.innerText = day;
+
+        // Prüfen, ob für diesen Tag ein Eintrag vorliegt
+        const hasEntry = entries.some(e => e.date === dateStr);
+        if (hasEntry) {
+          const dot = document.createElement('div');
+          dot.className = 'dot';
+          dayDiv.appendChild(dot);
+        }
+
+        dayDiv.onclick = () => {
+          if (selectedDateStr === dateStr) {
+            selectedDateStr = null; // Abwählen
+          } else {
+            selectedDateStr = dateStr;
+          }
+          renderCalendar();
+          renderEntries();
+        };
+
+        calGrid.appendChild(dayDiv);
+      }
+    }
+
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function resetToToday() {
+      currentDate = new Date();
+      selectedDateStr = new Date().toISOString().split('T')[0];
+      renderCalendar();
+      renderEntries();
+    }
+
+    function renderEntries() {
+      const list = document.getElementById('entriesList');
+      const title = document.getElementById('entriesListTitle');
+
+      let filteredEntries = entries;
+      if (selectedDateStr) {
+        filteredEntries = entries.filter(e => e.date === selectedDateStr);
+        title.innerText = `Einträge (${formatDate(selectedDateStr)})`;
+      } else {
+        title.innerText = 'Alle Einträge';
+      }
+
+      if (filteredEntries.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:var(--text-sec); font-size:13px; padding:12px;">Keine Einträge für diesen Zeitraum</div>';
+        return;
+      }
+
+      list.innerHTML = filteredEntries.map(e => {
+        let tagClass = e.type === 'Homeoffice' ? 'tag-ho' : (e.type === 'Dienstgang' ? 'tag-dg' : 'tag-bu');
+        const duration = calculateDuration(e.startTime, e.endTime);
+
+        return `
+          <div class="entry-item">
+            <div class="entry-header">
+              <span class="tag ${tagClass}">${e.type}</span>
+              <span>${formatDate(e.date)}</span>
+            </div>
+            <div class="entry-details">
+              <span>${e.startTime} - ${e.endTime} Uhr</span>
+              <strong>${duration} Std.</strong>
+            </div>
+            <div class="entry-actions">
+              <button class="btn btn-secondary btn-sm" onclick="openModal(${e.id})">Bearbeiten</button>
+              <button class="btn btn-secondary btn-sm" style="color:var(--danger);" onclick="deleteEntry(${e.id})">Löschen</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function calculateDuration(start, end) {
+      const [h1, m1] = start.split(':').map(Number);
+      const [h2, m2] = end.split(':').map(Number);
+      let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+      if (diff < 0) diff += 24 * 60;
+      return (diff / 60).toFixed(2);
+    }
+
+    function formatDate(dateStr) {
+      const parts = dateStr.split('-');
+      if(parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+      return dateStr;
+    }
+
+    function openModal(id) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      document.getElementById('editId').value = entry.id;
+      document.getElementById('editType').value = entry.type;
+      document.getElementById('editDate').value = entry.date;
+      document.getElementById('editStart').value = entry.startTime;
+      document.getElementById('editEnd').value = entry.endTime;
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').style.display = 'none';
+    }
+
+    function saveEdit() {
+      const id = Number(document.getElementById('editId').value);
+      const entryIndex = entries.findIndex(e => e.id === id);
+
+      if (entryIndex !== -1) {
+        entries[entryIndex].type = document.getElementById('editType').value;
+        entries[entryIndex].date = document.getElementById('editDate').value;
+        entries[entryIndex].startTime = document.getElementById('editStart').value;
+        entries[entryIndex].endTime = document.getElementById('editEnd').value;
+
+        localStorage.setItem('timeEntries', JSON.stringify(entries));
+        updateUI();
+      }
+
+      closeModal();
+    }
+
+    function deleteEntry(id) {
+      if (confirm('Möchtest du diesen Eintrag wirklich löschen?')) {
+        entries = entries.filter(e => e.id !== id);
+        localStorage.setItem('timeEntries', JSON.stringify(entries));
         updateUI();
       }
     }
 
-    function updateTimer() {
-      if (!currentSession) {
-        document.getElementById('timer').innerText = "00:00:00";
+    function exportCSV() {
+      if (entries.length === 0) {
+        alert('Keine Einträge zum Exportieren vorhanden.');
         return;
       }
-      const start = new Date(currentSession.start);
-      const diff = Math.floor((new Date() - start) / 1000);
-      
-      const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-      const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-      const seconds = String(diff % 60).padStart(2, '0');
-      
-      document.getElementById('timer').innerText = `${hours}:${minutes}:${seconds}`;
-    }
 
-    function updateUI() {
-      const statusEl = document.getElementById('current-status');
-      if (currentSession) {
-        statusEl.innerText = currentSession.type;
-        statusEl.className = `status-value tag-${currentSession.type}`;
-      } else {
-        statusEl.innerText = "Inaktiv / Feierabend";
-        statusEl.className = "status-value";
-      }
-
-      const listEl = document.getElementById('log-list');
-      listEl.innerHTML = '';
-      logs.forEach(log => {
-        const li = document.createElement('li');
-        li.className = 'log-item';
-        li.innerHTML = `
-          <span class="log-tag tag-${log.type}">${log.type}</span>
-          <span>${log.date} | ${log.start} - ${log.end}</span>
-        `;
-        listEl.appendChild(li);
+      let csv = 'Datum;Art;Startzeit;Endzeit;Dauer (Std)\n';
+      entries.forEach(e => {
+        const duration = calculateDuration(e.startTime, e.endTime);
+        csv += `${formatDate(e.date)};${e.type};${e.startTime};${e.endTime};${duration}\n`;
       });
 
-      clearInterval(timerInterval);
-      if (currentSession) {
-        timerInterval = setInterval(updateTimer, 1000);
-        updateTimer();
-      }
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `Arbeitszeiten_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
-    // Beim Laden der Seite UI aktualisieren
     updateUI();
   </script>
 </body>

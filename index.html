@@ -6,6 +6,8 @@
   <title>Arbeitszeit</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- Versioning zur Cache-Steuerung -->
+  <meta name="app-version" content="1.2.0">
   <style>
     :root {
       --bg: #1c1c1e;
@@ -20,8 +22,11 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding: 16px; padding-bottom: 40px; }
-    h1 { font-size: 24px; font-weight: 700; margin-bottom: 16px; text-align: center; }
     
+    .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    h1 { font-size: 24px; font-weight: 700; }
+    .reload-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; }
+
     .card { background-color: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
     
     .status-box { text-align: center; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; margin-bottom: 16px; background: #3a3a3c; }
@@ -71,7 +76,10 @@
 </head>
 <body>
 
-  <h1>Arbeitszeit-Erfassung</h1>
+  <div class="header-container">
+    <h1>Arbeitszeit-Erfassung</h1>
+    <button class="reload-btn" onclick="forceAppUpdate()" title="App aktualisieren">🔄</button>
+  </div>
 
   <div class="card">
     <div id="statusBox" class="status-box">Nicht eingestempelt</div>
@@ -108,15 +116,18 @@
   <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <h2 style="font-size: 16px;" id="entriesListTitle">Einträge</h2>
-      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">CSV Export</button>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn btn-ho btn-sm" onclick="openAddModal()">+ Neuer Eintrag</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">CSV Export</button>
+      </div>
     </div>
     <div id="entriesList"></div>
   </div>
 
-  <!-- Modal für Nachbearbeitung -->
+  <!-- Modal für Erstellung & Nachbearbeitung -->
   <div id="editModal" class="modal">
     <div class="modal-content">
-      <div class="modal-title">Eintrag bearbeiten</div>
+      <div class="modal-title" id="modalTitle">Eintrag bearbeiten</div>
       <input type="hidden" id="editId">
       <div class="form-group">
         <label>Art</label>
@@ -140,7 +151,7 @@
       </div>
       <div style="display: flex; gap: 8px; margin-top: 16px;">
         <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Abbrechen</button>
-        <button class="btn btn-bu" style="flex:1;" onclick="saveEdit()">Speichern</button>
+        <button class="btn btn-bu" style="flex:1;" onclick="saveModal()">Speichern</button>
       </div>
     </div>
   </div>
@@ -150,7 +161,32 @@
     let entries = JSON.parse(localStorage.getItem('timeEntries')) || [];
     
     let currentDate = new Date();
-    let selectedDateStr = null; // Filter für ausgewählten Tag
+    let selectedDateStr = null;
+
+    // Auto-Update Logik zur Vermeidung von iOS-Caching-Problemen
+    function forceAppUpdate() {
+      window.location.reload(true);
+    }
+
+    function checkCacheAndReload() {
+      fetch(window.location.href, { cache: 'no-store' })
+        .then(response => response.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const newVersion = doc.querySelector('meta[name="app-version"]')?.getAttribute('content');
+          const currentVersion = document.querySelector('meta[name="app-version"]')?.getAttribute('content');
+          
+          if (newVersion && newVersion !== currentVersion) {
+            window.location.reload(true);
+          }
+        }).catch(() => {});
+    }
+
+    // Beim Starten prüfen, ob eine neue Version vorliegt
+    window.addEventListener('DOMContentLoaded', () => {
+      checkCacheAndReload();
+    });
 
     function updateUI() {
       const statusBox = document.getElementById('statusBox');
@@ -215,7 +251,6 @@
       const firstDayOfMonth = new Date(year, month, 1);
       const lastDayOfMonth = new Date(year, month + 1, 0);
 
-      // Wochentag anpassen (Montag = 0, Sonntag = 6)
       let firstDayIndex = firstDayOfMonth.getDay() - 1;
       if (firstDayIndex === -1) firstDayIndex = 6;
 
@@ -225,7 +260,6 @@
 
       const todayStr = new Date().toISOString().split('T')[0];
 
-      // Tage des vorherigen Monats (Auffüllung)
       const prevMonthLastDay = new Date(year, month, 0).getDate();
       for (let i = firstDayIndex; i > 0; i--) {
         const dayDiv = document.createElement('div');
@@ -234,7 +268,6 @@
         calGrid.appendChild(dayDiv);
       }
 
-      // Tage des aktuellen Monats
       for (let day = 1; day <= totalDays; day++) {
         const dayDiv = document.createElement('div');
         const formattedDay = day < 10 ? `0${day}` : day;
@@ -247,7 +280,6 @@
 
         dayDiv.innerText = day;
 
-        // Prüfen, ob für diesen Tag ein Eintrag vorliegt
         const hasEntry = entries.some(e => e.date === dateStr);
         if (hasEntry) {
           const dot = document.createElement('div');
@@ -257,7 +289,7 @@
 
         dayDiv.onclick = () => {
           if (selectedDateStr === dateStr) {
-            selectedDateStr = null; // Abwählen
+            selectedDateStr = null;
           } else {
             selectedDateStr = dateStr;
           }
@@ -313,7 +345,7 @@
               <strong>${duration} Std.</strong>
             </div>
             <div class="entry-actions">
-              <button class="btn btn-secondary btn-sm" onclick="openModal(${e.id})">Bearbeiten</button>
+              <button class="btn btn-secondary btn-sm" onclick="openEditModal(${e.id})">Bearbeiten</button>
               <button class="btn btn-secondary btn-sm" style="color:var(--danger);" onclick="deleteEntry(${e.id})">Löschen</button>
             </div>
           </div>
@@ -335,10 +367,25 @@
       return dateStr;
     }
 
-    function openModal(id) {
+    function openAddModal() {
+      document.getElementById('modalTitle').innerText = 'Neuen Eintrag anlegen';
+      document.getElementById('editId').value = '';
+      document.getElementById('editType').value = 'Homeoffice';
+      
+      // Falls ein Tag im Kalender ausgewählt ist, dieses nehmen, sonst Heute
+      const defaultDate = selectedDateStr ? selectedDateStr : new Date().toISOString().split('T')[0];
+      document.getElementById('editDate').value = defaultDate;
+      document.getElementById('editStart').value = '08:00';
+      document.getElementById('editEnd').value = '17:00';
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function openEditModal(id) {
       const entry = entries.find(e => e.id === id);
       if (!entry) return;
 
+      document.getElementById('modalTitle').innerText = 'Eintrag bearbeiten';
       document.getElementById('editId').value = entry.id;
       document.getElementById('editType').value = entry.type;
       document.getElementById('editDate').value = entry.date;
@@ -352,20 +399,41 @@
       document.getElementById('editModal').style.display = 'none';
     }
 
-    function saveEdit() {
-      const id = Number(document.getElementById('editId').value);
-      const entryIndex = entries.findIndex(e => e.id === id);
+    function saveModal() {
+      const idVal = document.getElementById('editId').value;
+      const type = document.getElementById('editType').value;
+      const date = document.getElementById('editDate').value;
+      const startTime = document.getElementById('editStart').value;
+      const endTime = document.getElementById('editEnd').value;
 
-      if (entryIndex !== -1) {
-        entries[entryIndex].type = document.getElementById('editType').value;
-        entries[entryIndex].date = document.getElementById('editDate').value;
-        entries[entryIndex].startTime = document.getElementById('editStart').value;
-        entries[entryIndex].endTime = document.getElementById('editEnd').value;
-
-        localStorage.setItem('timeEntries', JSON.stringify(entries));
-        updateUI();
+      if (!date || !startTime || !endTime) {
+        alert('Bitte fülle alle Felder vollständig aus.');
+        return;
       }
 
+      if (idVal) {
+        // Bestehenden Eintrag aktualisieren
+        const id = Number(idVal);
+        const entryIndex = entries.findIndex(e => e.id === id);
+        if (entryIndex !== -1) {
+          entries[entryIndex] = { id, type, date, startTime, endTime };
+        }
+      } else {
+        // Neuen Eintrag hinzufügen
+        const newEntry = {
+          id: Date.now(),
+          type,
+          date,
+          startTime,
+          endTime
+        };
+        entries.unshift(newEntry);
+        // Nach Datum sortieren (neueste zuerst)
+        entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+      }
+
+      localStorage.setItem('timeEntries', JSON.stringify(entries));
+      updateUI();
       closeModal();
     }
 

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Arbeitszeit</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root {
+      --bg: #1c1c1e;
+      --card: #2c2c2e;
+      --accent-ho: #0a84ff;
+      --accent-dg: #ff9f0a;
+      --accent-bu: #30d158;
+      --danger: #ff453a;
+      --text: #ffffff;
+      --text-sec: #8e8e93;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; padding-bottom: 40px; }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+    
+    .status-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .status-title { font-size: 14px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px; }
+    .status-value { font-size: 22px; font-weight: 600; margin: 8px 0; color: var(--text); }
+    .timer { font-size: 32px; font-weight: 700; font-mono: monospace; font-variant-numeric: tabular-nums; }
+
+    .btn-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 18px;
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-ho { background-color: var(--accent-ho); }
+    .btn-dg { background-color: var(--accent-dg); }
+    .btn-bu { background-color: var(--accent-bu); }
+    .btn-stop { background-color: var(--danger); width: 100%; margin-top: 8px; }
+
+    .log-section { background: var(--card); border-radius: 16px; padding: 16px; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .log-header h2 { font-size: 18px; }
+    .clear-btn { background: none; border: none; color: var(--danger); font-size: 14px; padding: 0; }
+    
+    .log-list { list-style: none; max-height: 250px; overflow-y: auto; }
+    .log-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #3a3a3c; font-size: 14px; }
+    .log-item:last-child { border-bottom: none; }
+    .log-tag { font-weight: 600; }
+    .tag-Homeoffice { color: var(--accent-ho); }
+    .tag-Dienstgang { color: var(--accent-dg); }
+    .tag-Büro { color: var(--accent-bu); }
+  </style>
+</head>
+<body>
+
+  <h1>Arbeitserfassung</h1>
+
+  <div class="status-card">
+    <div class="status-title">Aktueller Status</div>
+    <div id="current-status" class="status-value">Inaktiv</div>
+    <div id="timer" class="timer">00:00:00</div>
+  </div>
+
+  <div class="btn-grid">
+    <button class="btn-ho" onclick="startTracking('Homeoffice')">🔵 Homeoffice</button>
+    <button class="btn-dg" onclick="startTracking('Dienstgang')">🟠 Dienstgang</button>
+    <button class="btn-bu" onclick="startTracking('Büro')">🟢 Büro</button>
+    <button class="btn-stop" onclick="stopTracking()">⏹️ Feierabend (Stopp)</button>
+  </div>
+
+  <div class="log-section">
+    <div class="log-header">
+      <h2>Heute erfasst</h2>
+      <button class="clear-btn" onclick="clearLogs()">Löschen</button>
+    </div>
+    <ul id="log-list" class="log-list"></ul>
+  </div>
+
+  <script>
+    let currentSession = JSON.parse(localStorage.getItem('currentSession')) || null;
+    let logs = JSON.parse(localStorage.getItem('workLogs')) || [];
+    let timerInterval = null;
+
+    function saveState() {
+      localStorage.setItem('currentSession', JSON.stringify(currentSession));
+      localStorage.setItem('workLogs', JSON.stringify(logs));
+    }
+
+    function startTracking(type) {
+      const now = new Date();
+      if (currentSession) {
+        stopTracking(false); // Vorherigen Status beenden, ohne komplett aufzuhören
+      }
+      currentSession = { type: type, start: now.toISOString() };
+      saveState();
+      updateUI();
+    }
+
+    function stopTracking(clearSession = true) {
+      if (!currentSession) return;
+      const now = new Date();
+      const startTime = new Date(currentSession.start);
+      
+      logs.unshift({
+        type: currentSession.type,
+        start: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        end: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        date: startTime.toLocaleDateString('de-DE')
+      });
+
+      if (clearSession) {
+        currentSession = null;
+      }
+      saveState();
+      updateUI();
+    }
+
+    function clearLogs() {
+      if (confirm('Möchtest du das Protokoll wirklich löschen?')) {
+        logs = [];
+        saveState();
+        updateUI();
+      }
+    }
+
+    function updateTimer() {
+      if (!currentSession) {
+        document.getElementById('timer').innerText = "00:00:00";
+        return;
+      }
+      const start = new Date(currentSession.start);
+      const diff = Math.floor((new Date() - start) / 1000);
+      
+      const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const seconds = String(diff % 60).padStart(2, '0');
+      
+      document.getElementById('timer').innerText = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function updateUI() {
+      const statusEl = document.getElementById('current-status');
+      if (currentSession) {
+        statusEl.innerText = currentSession.type;
+        statusEl.className = `status-value tag-${currentSession.type}`;
+      } else {
+        statusEl.innerText = "Inaktiv / Feierabend";
+        statusEl.className = "status-value";
+      }
+
+      const listEl = document.getElementById('log-list');
+      listEl.innerHTML = '';
+      logs.forEach(log => {
+        const li = document.createElement('li');
+        li.className = 'log-item';
+        li.innerHTML = `
+          <span class="log-tag tag-${log.type}">${log.type}</span>
+          <span>${log.date} | ${log.start} - ${log.end}</span>
+        `;
+        listEl.appendChild(li);
+      });
+
+      clearInterval(timerInterval);
+      if (currentSession) {
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
+      }
+    }
+
+    // Beim Laden der Seite UI aktualisieren
+    updateUI();
+  </script>
+</body>
+</html>
